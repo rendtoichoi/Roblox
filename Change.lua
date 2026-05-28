@@ -4,7 +4,6 @@ local CommF = ReplicatedStorage
     :WaitForChild("Remotes")
     :WaitForChild("CommF_")
 
--- CONFIG
 local CHECK_EVERY = 1
 
 getgenv().CFG = getgenv().CFG or {}
