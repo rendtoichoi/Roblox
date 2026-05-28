@@ -1,12 +1,18 @@
 local Players = game:GetService("Players")
 local Lighting = game:GetService("Lighting")
-local TeleportService = game:GetService("TeleportService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UIS = game:GetService("UserInputService")
 
 local plr = Players.LocalPlayer
+local G = getgenv()
 
-_G.Job = ""
-_G.SpamJoin = true
+G.Job = G.Job or ""
+G.SpamJoin = G.SpamJoin or false
+
+G.UsernamesNoSpam = G.UsernamesNoSpam or {
+	"username1",
+	"username2",
+}
 
 pcall(function()
 	if plr.PlayerGui:FindFirstChild("MoonChecker") then
@@ -20,6 +26,36 @@ pcall(function()
 	end
 end)
 
+function TPServer(JobIdorstring)
+	if string.find(tostring(JobIdorstring), "TeleportService") then
+		local ok, err = pcall(function()
+			loadstring(JobIdorstring)()
+		end)
+
+		if ok then
+			return "Success | Teleporting..."
+		else
+			return err
+		end
+	else
+		pcall(function()
+			ReplicatedStorage:WaitForChild("__ServerBrowser"):InvokeServer("teleport", tostring(JobIdorstring))
+		end)
+
+		return "Trying to teleport..."
+	end
+end
+
+local function IsNoSpamUser()
+	for _, name in ipairs(G.UsernamesNoSpam) do
+		if tostring(name):lower() == plr.Name:lower() then
+			return true
+		end
+	end
+
+	return false
+end
+
 local MoonGui = Instance.new("ScreenGui")
 MoonGui.Name = "MoonChecker"
 MoonGui.ResetOnSpawn = false
@@ -29,6 +65,7 @@ local MainText = Instance.new("TextLabel")
 MainText.Parent = MoonGui
 MainText.Size = UDim2.new(0, 400, 0, 100)
 MainText.AnchorPoint = Vector2.new(0.5, 0)
+
 MainText.Position = UDim2.new(0.5, 0, 0, -10)
 
 MainText.BackgroundTransparency = 1
@@ -39,15 +76,6 @@ MainText.Font = Enum.Font.SourceSansBold
 MainText.Text = "Loading..."
 MainText.TextXAlignment = Enum.TextXAlignment.Center
 MainText.TextYAlignment = Enum.TextYAlignment.Center
-
-local function GetGameTime()
-	local c2 = Lighting.ClockTime
-	if c2 >= 18 or c2 < 5 then
-		return "Night"
-	else
-		return "Day"
-	end
-end
 
 local function GetHour()
 	return math.floor(Lighting.ClockTime)
@@ -66,9 +94,11 @@ end
 
 local function MoonTextureId()
 	local sky = Lighting:FindFirstChildOfClass("Sky")
+
 	if sky and sky.MoonTextureId then
 		return sky.MoonTextureId
 	end
+
 	return ""
 end
 
@@ -90,6 +120,7 @@ end
 
 local function mmbs(inp, c2)
 	local ps = inp - c2
+
 	if ps > 1 then
 		return math.floor(ps) .. " Minutes"
 	else
@@ -104,13 +135,13 @@ local function GetMoonStatus()
 	if moon == "Full Moon" and c2 <= 5 then
 		return tostring(GetHour()).." (End in "..mmbs(5,c2)..")"
 
-	elseif moon == "Full Moon" and (c2 > 5 and c2 < 12) then
+	elseif moon == "Full Moon" and c2 > 5 and c2 < 12 then
 		return tostring(GetHour()).." (Fake Moon)"
 
-	elseif moon == "Full Moon" and (c2 > 12 and c2 < 18) then
+	elseif moon == "Full Moon" and c2 > 12 and c2 < 18 then
 		return tostring(GetHour()).." (Full in "..mmbs(18,c2)..")"
 
-	elseif moon == "Full Moon" and (c2 > 18 and c2 <= 24) then
+	elseif moon == "Full Moon" and c2 > 18 and c2 <= 24 then
 		return tostring(GetHour()).." (End in "..mmbs(30,c2)..")"
 	end
 
@@ -151,121 +182,113 @@ gui.ResetOnSpawn = false
 gui.Parent = game.CoreGui
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0,260,0,150)
-frame.Position = UDim2.new(1,-270,0.4,0)
-frame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+frame.Size = UDim2.new(0, 260, 0, 120)
+frame.Position = UDim2.new(1, -270, 0.15, 0)
+frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 frame.Parent = gui
-Instance.new("UICorner",frame)
+Instance.new("UICorner", frame)
 
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1,0,0,25)
-title.BackgroundColor3 = Color3.fromRGB(20,20,20)
+title.Size = UDim2.new(1, 0, 0, 25)
+title.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 title.Text = "Server JobId"
-title.TextColor3 = Color3.new(1,1,1)
+title.TextColor3 = Color3.new(1, 1, 1)
 title.TextScaled = true
 title.Parent = frame
 
 local mini = Instance.new("TextButton")
-mini.Size = UDim2.new(0,25,0,25)
-mini.Position = UDim2.new(1,-25,0,0)
+mini.Size = UDim2.new(0, 25, 0, 25)
+mini.Position = UDim2.new(1, -25, 0, 0)
 mini.Text = "-"
-mini.BackgroundColor3 = Color3.fromRGB(60,60,60)
-mini.TextColor3 = Color3.new(1,1,1)
+mini.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+mini.TextColor3 = Color3.new(1, 1, 1)
 mini.Parent = frame
 
 local content = Instance.new("Frame")
-content.Size = UDim2.new(1,0,1,-25)
-content.Position = UDim2.new(0,0,0,25)
+content.Size = UDim2.new(1, 0, 1, -25)
+content.Position = UDim2.new(0, 0, 0, 25)
 content.BackgroundTransparency = 1
 content.Parent = frame
 
 local jobLabel = Instance.new("TextLabel")
-jobLabel.Size = UDim2.new(1,-10,0,25)
-jobLabel.Position = UDim2.new(0,5,0,5)
+jobLabel.Size = UDim2.new(1, -10, 0, 25)
+jobLabel.Position = UDim2.new(0, 5, 0, 5)
 jobLabel.BackgroundTransparency = 1
-jobLabel.TextColor3 = Color3.new(1,1,1)
+jobLabel.TextColor3 = Color3.new(1, 1, 1)
 jobLabel.TextScaled = true
-jobLabel.Text = "Job ID: "..game.JobId
+jobLabel.Text = "Job ID: " .. game.JobId
 jobLabel.Parent = content
 
-local copyBtn = Instance.new("TextButton")
-copyBtn.Size = UDim2.new(1,-10,0,25)
-copyBtn.Position = UDim2.new(0,5,0,35)
-copyBtn.Text = "Copy Job ID"
-copyBtn.BackgroundColor3 = Color3.fromRGB(50,50,50)
-copyBtn.TextColor3 = Color3.new(1,1,1)
-copyBtn.Parent = content
-Instance.new("UICorner",copyBtn)
-
-copyBtn.MouseButton1Click:Connect(function()
-	pcall(function()
-		setclipboard(tostring(game.JobId))
-	end)
-end)
-
 local box = Instance.new("TextBox")
-box.Size = UDim2.new(1,-10,0,25)
-box.Position = UDim2.new(0,5,0,65)
+box.Size = UDim2.new(1, -10, 0, 25)
+box.Position = UDim2.new(0, 5, 0, 35)
 box.PlaceholderText = "Enter Job ID"
-box.Text = ""
-box.BackgroundColor3 = Color3.fromRGB(50,50,50)
-box.TextColor3 = Color3.new(1,1,1)
+box.Text = G.Job
+box.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+box.TextColor3 = Color3.new(1, 1, 1)
 box.Parent = content
-Instance.new("UICorner",box)
+Instance.new("UICorner", box)
 
 box.FocusLost:Connect(function()
-	_G.Job = box.Text
+	G.Job = box.Text
 end)
 
 local joinBtn = Instance.new("TextButton")
-joinBtn.Size = UDim2.new(0.48,-5,0,25)
-joinBtn.Position = UDim2.new(0,5,0,100)
+joinBtn.Size = UDim2.new(0.48, -5, 0, 25)
+joinBtn.Position = UDim2.new(0, 5, 0, 70)
 joinBtn.Text = "Join Server"
-joinBtn.BackgroundColor3 = Color3.fromRGB(70,70,70)
-joinBtn.TextColor3 = Color3.new(1,1,1)
+joinBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+joinBtn.TextColor3 = Color3.new(1, 1, 1)
 joinBtn.Parent = content
-Instance.new("UICorner",joinBtn)
+Instance.new("UICorner", joinBtn)
 
 joinBtn.MouseButton1Click:Connect(function()
-	_G.Job = box.Text
+	G.Job = box.Text
 
-	if _G.Job ~= "" then
-		pcall(function()
-			TeleportService:TeleportToPlaceInstance(game.PlaceId, _G.Job, plr)
-		end)
+	if G.Job ~= "" then
+		local result = TPServer(G.Job)
+		print("[JOIN SERVER]", result)
 	end
 end)
 
 local spamBtn = Instance.new("TextButton")
-spamBtn.Size = UDim2.new(0.48,-5,0,25)
-spamBtn.Position = UDim2.new(0.52,0,0,100)
-spamBtn.Text = "Spam : OFF"
-spamBtn.BackgroundColor3 = Color3.fromRGB(90,50,50)
-spamBtn.TextColor3 = Color3.new(1,1,1)
+spamBtn.Size = UDim2.new(0.48, -5, 0, 25)
+spamBtn.Position = UDim2.new(0.52, 0, 0, 70)
+spamBtn.Text = IsNoSpamUser() and "Spam : LOCK" or "Spam : OFF"
+spamBtn.BackgroundColor3 = IsNoSpamUser() and Color3.fromRGB(80, 80, 80) or Color3.fromRGB(90, 50, 50)
+spamBtn.TextColor3 = Color3.new(1, 1, 1)
 spamBtn.Parent = content
-Instance.new("UICorner",spamBtn)
+Instance.new("UICorner", spamBtn)
 
 spamBtn.MouseButton1Click:Connect(function()
-	_G.Job = box.Text
-	_G.SpamJoin = not _G.SpamJoin
+	if IsNoSpamUser() then
+		G.SpamJoin = false
+		spamBtn.Text = "Spam : LOCK"
+		spamBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+		return
+	end
 
-	if _G.SpamJoin then
+	G.Job = box.Text
+	G.SpamJoin = not G.SpamJoin
+
+	if G.SpamJoin then
 		spamBtn.Text = "Spam : ON"
-		spamBtn.BackgroundColor3 = Color3.fromRGB(50,120,50)
+		spamBtn.BackgroundColor3 = Color3.fromRGB(50, 120, 50)
 	else
 		spamBtn.Text = "Spam : OFF"
-		spamBtn.BackgroundColor3 = Color3.fromRGB(90,50,50)
+		spamBtn.BackgroundColor3 = Color3.fromRGB(90, 50, 50)
 	end
 end)
 
 task.spawn(function()
 	while task.wait(2) do
-		if _G.SpamJoin then
-			_G.Job = box.Text
+		if not IsNoSpamUser() and G.SpamJoin then
+			G.Job = box.Text
 
-			if _G.Job ~= "" then
+			if G.Job ~= "" then
 				pcall(function()
-					TeleportService:TeleportToPlaceInstance(game.PlaceId, _G.Job, plr)
+					local result = TPServer(G.Job)
+					print("[SPAM JOIN]", result)
 				end)
 			end
 		end
@@ -279,11 +302,11 @@ mini.MouseButton1Click:Connect(function()
 
 	if minimized then
 		content.Visible = false
-		frame.Size = UDim2.new(0,260,0,25)
+		frame.Size = UDim2.new(0, 260, 0, 25)
 		mini.Text = "+"
 	else
 		content.Visible = true
-		frame.Size = UDim2.new(0,260,0,150)
+		frame.Size = UDim2.new(0, 260, 0, 120)
 		mini.Text = "-"
 	end
 end)
@@ -295,6 +318,7 @@ local startPos
 
 local function update(input)
 	local delta = input.Position - dragStart
+
 	frame.Position = UDim2.new(
 		startPos.X.Scale,
 		startPos.X.Offset + delta.X,
