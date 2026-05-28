@@ -65,9 +65,7 @@ local MainText = Instance.new("TextLabel")
 MainText.Parent = MoonGui
 MainText.Size = UDim2.new(0, 400, 0, 100)
 MainText.AnchorPoint = Vector2.new(0.5, 0)
-
 MainText.Position = UDim2.new(0.5, 0, 0, -10)
-
 MainText.BackgroundTransparency = 1
 MainText.TextColor3 = Color3.fromRGB(255,255,255)
 MainText.TextStrokeTransparency = 0
@@ -182,7 +180,7 @@ gui.ResetOnSpawn = false
 gui.Parent = game.CoreGui
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 260, 0, 120)
+frame.Size = UDim2.new(0, 260, 0, 150)
 frame.Position = UDim2.new(1, -270, 0.15, 0)
 frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 frame.Parent = gui
@@ -219,9 +217,28 @@ jobLabel.TextScaled = true
 jobLabel.Text = "Job ID: " .. game.JobId
 jobLabel.Parent = content
 
+local copyBtn = Instance.new("TextButton")
+copyBtn.Size = UDim2.new(1, -10, 0, 25)
+copyBtn.Position = UDim2.new(0, 5, 0, 35)
+copyBtn.Text = "Copy Job ID"
+copyBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+copyBtn.TextColor3 = Color3.new(1, 1, 1)
+copyBtn.Parent = content
+Instance.new("UICorner", copyBtn)
+
+copyBtn.MouseButton1Click:Connect(function()
+	pcall(function()
+		setclipboard(tostring(game.JobId))
+	end)
+
+	copyBtn.Text = "Copied!"
+	task.wait(1)
+	copyBtn.Text = "Copy Job ID"
+end)
+
 local box = Instance.new("TextBox")
 box.Size = UDim2.new(1, -10, 0, 25)
-box.Position = UDim2.new(0, 5, 0, 35)
+box.Position = UDim2.new(0, 5, 0, 65)
 box.PlaceholderText = "Enter Job ID"
 box.Text = G.Job
 box.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
@@ -235,7 +252,7 @@ end)
 
 local joinBtn = Instance.new("TextButton")
 joinBtn.Size = UDim2.new(0.48, -5, 0, 25)
-joinBtn.Position = UDim2.new(0, 5, 0, 70)
+joinBtn.Position = UDim2.new(0, 5, 0, 100)
 joinBtn.Text = "Join Server"
 joinBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
 joinBtn.TextColor3 = Color3.new(1, 1, 1)
@@ -253,7 +270,7 @@ end)
 
 local spamBtn = Instance.new("TextButton")
 spamBtn.Size = UDim2.new(0.48, -5, 0, 25)
-spamBtn.Position = UDim2.new(0.52, 0, 0, 70)
+spamBtn.Position = UDim2.new(0.52, 0, 0, 100)
 spamBtn.Text = IsNoSpamUser() and "Spam : LOCK" or "Spam : OFF"
 spamBtn.BackgroundColor3 = IsNoSpamUser() and Color3.fromRGB(80, 80, 80) or Color3.fromRGB(90, 50, 50)
 spamBtn.TextColor3 = Color3.new(1, 1, 1)
@@ -306,7 +323,7 @@ mini.MouseButton1Click:Connect(function()
 		mini.Text = "+"
 	else
 		content.Visible = true
-		frame.Size = UDim2.new(0, 260, 0, 120)
+		frame.Size = UDim2.new(0, 260, 0, 150)
 		mini.Text = "-"
 	end
 end)
