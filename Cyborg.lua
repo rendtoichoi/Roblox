@@ -1,7 +1,7 @@
 getgenv().Settings = {
-    ["Max Chests"] = 50;
+    ["Max Chests"] = 40;
     ["Skip Chest Delay"] = 1;
-    ["Reset After Collect Chests"] = 7;
+    ["Reset After Collect Chests"] = 5;
     ["Katakuri Progress"] = 100;
     ["Fragments"] = 1000;
     ["Black Screen"] = false;
