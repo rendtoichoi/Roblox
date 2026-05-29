@@ -364,65 +364,165 @@ TeleportSea = function(sea, msg)
     COMMF_:InvokeServer(target)
 end
 
-local all = 0;
+local ChestBlacklist = {}
+
+local function IsValidChest(v)
+    if not v then return false end
+    if not v.Parent then return false end
+    if not v:IsDescendantOf(workspace) then return false end
+    if not v:IsA("BasePart") then return false end
+    if not v.Name:find("Chest") then return false end
+
+    local t = ChestBlacklist[v]
+    if t and tick() - t < 15 then
+        return false
+    end
+
+    return true
+end
+
+local function TouchChest(chest)
+    if not chest or not HumanoidRootPart or not Character then return false end
+
+    Tween(false)
+
+    -- đứng thấp hơn một chút để HRP/body thật sự overlap chest
+    for i = 1, 8 do
+        if not IsValidChest(chest) or IsDied(Character) then
+            return false
+        end
+
+        pcall(function()
+            Character:SetPrimaryPartCFrame(chest.CFrame + Vector3.new(0, 1.5, 0))
+        end)
+
+        pcall(function()
+            firetouchinterest(HumanoidRootPart, chest, 0)
+            task.wait(0.08)
+            firetouchinterest(HumanoidRootPart, chest, 1)
+        end)
+
+        task.wait(0.12)
+    end
+
+    return true
+end
+
+local function WaitChestGone(chest, timeout)
+    local start = tick()
+
+    repeat
+        task.wait(0.1)
+
+        if not chest then
+            return true
+        end
+
+        if not chest.Parent or not chest:IsDescendantOf(workspace) then
+            return true
+        end
+
+    until tick() - start >= timeout
+
+    return false
+end
+
+local all = 0
+
 FarmBeli = (function(x)
-    if type(x) ~= "function" then warn("ddijt con me may") end
-    local chests, c = {}, 0
-    local m = CollectionService:GetTagged("_ChestTagged")
     if not Character or IsDied(Character) then
         print("Not found character")
         task.wait(3)
         return
     end
+
+    local c = 0
     Tween(false)
-    for _, v in next, CollectionService:GetTagged("_ChestTagged") do
-        if v and v.CanTouch then
-            local dist = (v.Position - HumanoidRootPart.Position).Magnitude
-            table.insert(chests, {obj = v, dist = dist})
+
+    while all < getgenv().Settings["Max Chests"]
+        and not CheckTool("Fist of Darkness")
+        and not CheckMonster("Darkbeard")
+        and not IsDied(Character)
+    do
+        local chests = {}
+
+        -- luôn scan chest mới, không dùng list cũ để tránh ghost chest
+        for _, v in next, CollectionService:GetTagged("_ChestTagged") do
+            if IsValidChest(v) and HumanoidRootPart then
+                table.insert(chests, {
+                    obj = v,
+                    dist = (v.Position - HumanoidRootPart.Position).Magnitude
+                })
+            end
         end
-    end
-    if #chests > 0 and all < getgenv().Settings["Max Chests"] and not CheckTool("Fist of Darkness") then
-        table.sort(chests, function(a, b) return a.dist < b.dist end)
-        if not CheckTool("Fist of Darkness") then
-            for i, t in next, chests do local v = t.obj
-                if v:IsA("BasePart") and v.Name:find("Chest") then
-                    if v.CanTouch then
-                        repeat task.wait()
-                            SetText("Collect Chests | Collected: " .. c.."/"..all .. "/"..getgenv().Settings["Max Chests"].." Chests")
-                            task.delay(getgenv().Settings["Skip Chest Delay"], function() v.CanTouch = false end)
-                            if not IsDied(Character) then
-                                Character:SetPrimaryPartCFrame(v.CFrame)
-                            end
-                            PressKeyEvent("Space")
-                        until not v.CanTouch or CheckTool("Fist of Darkness") or IsDied(Character)
-                        if all >= getgenv().Settings["Max Chests"] then SetText("Stopped: Max Chests reached") HopServer(8) break
-                        elseif CheckTool("Fist of Darkness") then SetText("Stopped: Fist of Darkness detected") break
-                        elseif CheckMonster("Darkbeard") then
-                            break
-                        end
-                        if not IsDied(Character) then
-                            c += 1 all += 1
-                            if not IsDied(Character) and c >= getgenv().Settings["Reset After Collect Chests"] and not CheckTool("Fist of Darkness") then
-                                if Character and Character:FindFirstChildWhichIsA("Humanoid")then
-                                    Character:FindFirstChildWhichIsA("Humanoid"):ChangeState(Enum.HumanoidStateType.Dead)
-                                    SetText("Collect Chests | Reset: Collected: "..tostring(getgenv().Settings["Reset After Collect Chests"]) .." Chests")
-                                end
-                                c = 0 task.wait(1)
-                            end
-                        else
-                            print("Character died, break")
-                            break
-                        end
-                    end
-                    if i % 250 == 0 then task.wait(0.1) end
-                end
+
+        if #chests <= 0 then
+            SetText("No valid chest found | Hopping...")
+            HopServer(10)
+            return
+        end
+
+        table.sort(chests, function(a, b)
+            return a.dist < b.dist
+        end)
+
+        local chest = chests[1].obj
+
+        if IsValidChest(chest) then
+            SetText("Collect Chests | Collected: " ..
+                tostring(c) .. "/" ..
+                tostring(all) .. "/" ..
+                tostring(getgenv().Settings["Max Chests"]) .. " Chests"
+            )
+
+            local touched = TouchChest(chest)
+            local gone = false
+
+            if touched then
+                gone = WaitChestGone(chest, 4)
+            end
+
+            if gone then
+                c += 1
+                all += 1
+                task.wait(getgenv().Settings["Skip Chest Delay"] or 1)
+            else
+                -- Không tự set CanTouch=false nữa. Nếu server không xoá chest thì bỏ qua tạm.
+                ChestBlacklist[chest] = tick()
+                SetText("Skipped ghost/failed chest")
+                task.wait(0.25)
             end
         else
-            Tween(false)
-            SetText("Stopped: Found Special Item")
+            ChestBlacklist[chest] = tick()
         end
-    else
-        if not CheckTool("Fist of Darkness") and not CheckMonster("Darkbeard") then HopServer(10) end
+
+        if all >= getgenv().Settings["Max Chests"] then
+            SetText("Stopped: Max Chests reached")
+            HopServer(8)
+            return
+        elseif CheckTool("Fist of Darkness") then
+            SetText("Stopped: Fist of Darkness detected")
+            return
+        elseif CheckMonster("Darkbeard") then
+            return
+        end
+
+        if c >= getgenv().Settings["Reset After Collect Chests"]
+            and not CheckTool("Fist of Darkness")
+            and not IsDied(Character)
+        then
+            if Character and Character:FindFirstChildWhichIsA("Humanoid") then
+                Character:FindFirstChildWhichIsA("Humanoid"):ChangeState(Enum.HumanoidStateType.Dead)
+                SetText("Collect Chests | Reset: Collected: " ..
+                    tostring(getgenv().Settings["Reset After Collect Chests"]) .. " Chests"
+                )
+            end
+            c = 0
+            task.wait(1)
+            return
+        end
+
+        task.wait(0.05)
     end
 end)
 
