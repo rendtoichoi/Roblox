@@ -245,7 +245,7 @@ HopServer = function(MaxPlayers, ForcedRegion)
             local Index = math.random(1, #ArrayServers)
             ServerData = ArrayServers[Index]
             if ServerData then
-                if not ForcedRegion or ServerData.Regoin == ForcedRegion then
+                if not ForcedRegion or ServerData.Region == ForcedRegion then
                     SetText("Found Server:", ServerData.JobId, 'Player Count:', ServerData.Players, "Region:", ServerData.Region)
                     break
                 end
