@@ -163,6 +163,7 @@ task.spawn(function()
 			"Time: "..h..":"..string.format("%02d", s)
 			.."\nMoon: "..moon
 			.."\nStatus: "..status
+			.."\nPlayers: "..#Players:GetPlayers()
 
 		if moon == "Full Moon" then
 			MainText.TextColor3 = Color3.fromRGB(0,255,127)
