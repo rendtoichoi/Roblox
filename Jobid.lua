@@ -2,371 +2,368 @@ local Players = game:GetService("Players")
 local Lighting = game:GetService("Lighting")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UIS = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
 
 local plr = Players.LocalPlayer
 local G = getgenv()
 
 G.Job = G.Job or ""
 G.SpamJoin = G.SpamJoin or false
-
-G.UsernamesNoSpam = G.UsernamesNoSpam or {
-	"username1",
-	"username2",
-}
+G.UsernamesNoSpam = G.UsernamesNoSpam or { "username1", "username2" }
 
 pcall(function()
-	if plr.PlayerGui:FindFirstChild("MoonChecker") then
-		plr.PlayerGui.MoonChecker:Destroy()
-	end
+	if plr.PlayerGui:FindFirstChild("MoonChecker") then plr.PlayerGui.MoonChecker:Destroy() end
 end)
-
 pcall(function()
-	if game.CoreGui:FindFirstChild("JobIdGui") then
-		game.CoreGui.JobIdGui:Destroy()
-	end
+	if game.CoreGui:FindFirstChild("JobIdGui") then game.CoreGui.JobIdGui:Destroy() end
 end)
 
-function TPServer(JobIdorstring)
-	if string.find(tostring(JobIdorstring), "TeleportService") then
-		local ok, err = pcall(function()
-			loadstring(JobIdorstring)()
-		end)
-
-		if ok then
-			return "Success | Teleporting..."
-		else
-			return err
-		end
+function TPServer(j)
+	if string.find(tostring(j), "TeleportService") then
+		local ok, err = pcall(function() loadstring(j)() end)
+		return ok and "Success | Teleporting..." or err
 	else
 		pcall(function()
-			ReplicatedStorage:WaitForChild("__ServerBrowser"):InvokeServer("teleport", tostring(JobIdorstring))
+			ReplicatedStorage:WaitForChild("__ServerBrowser"):InvokeServer("teleport", tostring(j))
 		end)
-
 		return "Trying to teleport..."
 	end
 end
 
 local function IsNoSpamUser()
-	for _, name in ipairs(G.UsernamesNoSpam) do
-		if tostring(name):lower() == plr.Name:lower() then
-			return true
-		end
+	for _, n in ipairs(G.UsernamesNoSpam) do
+		if tostring(n):lower() == plr.Name:lower() then return true end
 	end
-
 	return false
 end
 
-local MoonGui = Instance.new("ScreenGui")
-MoonGui.Name = "MoonChecker"
-MoonGui.ResetOnSpawn = false
-MoonGui.Parent = plr:WaitForChild("PlayerGui")
-
-local MainText = Instance.new("TextLabel")
-MainText.Parent = MoonGui
-MainText.Size = UDim2.new(0, 400, 0, 100)
-MainText.AnchorPoint = Vector2.new(0.5, 0)
-MainText.Position = UDim2.new(0.5, 0, 0, -10)
-MainText.BackgroundTransparency = 1
-MainText.TextColor3 = Color3.fromRGB(255,255,255)
-MainText.TextStrokeTransparency = 0
-MainText.TextScaled = true
-MainText.Font = Enum.Font.SourceSansBold
-MainText.Text = "Loading..."
-MainText.TextXAlignment = Enum.TextXAlignment.Center
-MainText.TextYAlignment = Enum.TextYAlignment.Center
-
-local function GetHour()
-	return math.floor(Lighting.ClockTime)
-end
-
 local function GetServerTime()
-	local RealTime = tostring(Lighting.ClockTime)
-	local RealTimeTable = RealTime:split(".")
-
-	local Minute = RealTimeTable[1] or "0"
-	local decimalPart = tonumber(RealTimeTable[2]) or 0
-	local Second = tonumber(decimalPart / 100) * 60
-
-	return Minute, math.floor(Second)
+	local t = tostring(Lighting.ClockTime):split(".")
+	return t[1] or "0", math.floor(((tonumber(t[2]) or 0) / 100) * 60)
 end
 
 local function MoonTextureId()
-	local sky = Lighting:FindFirstChildOfClass("Sky")
-
-	if sky and sky.MoonTextureId then
-		return sky.MoonTextureId
-	end
-
-	return ""
+	local s = Lighting:FindFirstChildOfClass("Sky")
+	return (s and s.MoonTextureId) or ""
 end
 
 local function CheckMoon()
-	local moon5 = "http://www.roblox.com/asset/?id=9709149431"
-	local moon4 = "http://www.roblox.com/asset/?id=9709149052"
-
-	local moonreal = MoonTextureId()
-	local result = "Bad Moon"
-
-	if moonreal == moon5 then
-		result = "Full Moon"
-	elseif moonreal == moon4 then
-		result = "Next Night"
-	end
-
-	return result
+	local id = MoonTextureId()
+	if id == "http://www.roblox.com/asset/?id=9709149431" then return "Full Moon"
+	elseif id == "http://www.roblox.com/asset/?id=9709149052" then return "Next Night"
+	else return "Bad Moon" end
 end
 
-local function mmbs(inp, c2)
-	local ps = inp - c2
-
-	if ps > 1 then
-		return math.floor(ps) .. " Minutes"
-	else
-		return math.floor(ps * 60) .. " Seconds"
-	end
+local function mmbs(a, b)
+	local d = a - b
+	return d > 1 and math.floor(d).." min" or math.floor(d*60).." sec"
 end
 
 local function GetMoonStatus()
-	local c2 = Lighting.ClockTime
+	local c = Lighting.ClockTime
 	local moon = CheckMoon()
-
-	if moon == "Full Moon" and c2 <= 5 then
-		return tostring(GetHour()).." (End in "..mmbs(5,c2)..")"
-
-	elseif moon == "Full Moon" and c2 > 5 and c2 < 12 then
-		return tostring(GetHour()).." (Fake Moon)"
-
-	elseif moon == "Full Moon" and c2 > 12 and c2 < 18 then
-		return tostring(GetHour()).." (Full in "..mmbs(18,c2)..")"
-
-	elseif moon == "Full Moon" and c2 > 18 and c2 <= 24 then
-		return tostring(GetHour()).." (End in "..mmbs(30,c2)..")"
+	if moon == "Full Moon" then
+		if c <= 5 then return "ends in "..mmbs(5,c)
+		elseif c < 12 then return "Fake Moon"
+		elseif c < 18 then return "Full In "..mmbs(18,c)
+		else return "Ends In "..mmbs(30,c) end
+	elseif moon == "Next Night" then
+		if c < 12 then return "Full In "..mmbs(18,c)
+		else return "full in "..mmbs(42,c) end
 	end
-
-	if moon == "Next Night" and c2 < 12 then
-		return tostring(GetHour()).." (Full in "..mmbs(18,c2)..")"
-
-	elseif moon == "Next Night" and c2 > 12 then
-		return tostring(GetHour()).." (Full in "..mmbs(18+24,c2)..")"
-	end
-
-	return tostring(GetHour())
+	return "No Moon"
 end
 
-task.spawn(function()
-	while task.wait(1) do
-		local h, s = GetServerTime()
-		local moon = CheckMoon()
-		local status = GetMoonStatus()
+local function Tween(obj, props, t)
+	TweenService:Create(obj,
+		TweenInfo.new(t or 0.28, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
+		props
+	):Play()
+end
 
-		MainText.Text =
-			"Time: "..h..":"..string.format("%02d", s)
-			.."\nMoon: "..moon
-			.."\nStatus: "..status
-			.."\nPlayers: "..#Players:GetPlayers()
+local C = {
+	black  = Color3.fromRGB(0,   0,   0),
+	dark   = Color3.fromRGB(12,  12,  12),
+	card   = Color3.fromRGB(20,  20,  20),
+	raised = Color3.fromRGB(28,  28,  28),
+	line   = Color3.fromRGB(38,  38,  38),
+	muted  = Color3.fromRGB(85,  85,  85),
+	silver = Color3.fromRGB(155, 155, 155),
+	white  = Color3.fromRGB(232, 232, 232),
+	green  = Color3.fromRGB(30,  100, 50),
+	red    = Color3.fromRGB(100, 28,  28),
+}
 
-		if moon == "Full Moon" then
-			MainText.TextColor3 = Color3.fromRGB(0,255,127)
-		elseif moon == "Next Night" then
-			MainText.TextColor3 = Color3.fromRGB(255,170,0)
-		else
-			MainText.TextColor3 = Color3.fromRGB(255,80,80)
+local function New(cls, p, parent)
+	local o = Instance.new(cls)
+	for k,v in pairs(p) do o[k] = v end
+	if parent then o.Parent = parent end
+	return o
+end
+
+local function Corner(r, p)
+	local c = Instance.new("UICorner"); c.CornerRadius = UDim.new(0,r); c.Parent = p
+end
+
+local function Stroke(col, p)
+	local s = Instance.new("UIStroke"); s.Thickness = 1; s.Color = col or C.line; s.Parent = p
+end
+
+local function Div(y, parent)
+	New("Frame", {
+		Size = UDim2.new(1,-20,0,1), Position = UDim2.new(0,10,0,y),
+		BackgroundColor3 = C.line, BorderSizePixel = 0, ZIndex = 10,
+	}, parent)
+end
+
+local function MakeDraggable(handle, target)
+	local drag, ds, sp = false, nil, nil
+	handle.InputBegan:Connect(function(i)
+		if i.UserInputType == Enum.UserInputType.MouseButton1 then
+			drag = true; ds = i.Position; sp = target.Position
+			i.Changed:Connect(function()
+				if i.UserInputState == Enum.UserInputState.End then drag = false end
+			end)
 		end
-	end
-end)
-
-local gui = Instance.new("ScreenGui")
-gui.Name = "JobIdGui"
-gui.ResetOnSpawn = false
-gui.Parent = game.CoreGui
-
-local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 260, 0, 150)
-frame.Position = UDim2.new(1, -270, 0.15, 0)
-frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-frame.Parent = gui
-Instance.new("UICorner", frame)
-
-local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 25)
-title.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-title.Text = "Server JobId"
-title.TextColor3 = Color3.new(1, 1, 1)
-title.TextScaled = true
-title.Parent = frame
-
-local mini = Instance.new("TextButton")
-mini.Size = UDim2.new(0, 25, 0, 25)
-mini.Position = UDim2.new(1, -25, 0, 0)
-mini.Text = "-"
-mini.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-mini.TextColor3 = Color3.new(1, 1, 1)
-mini.Parent = frame
-
-local content = Instance.new("Frame")
-content.Size = UDim2.new(1, 0, 1, -25)
-content.Position = UDim2.new(0, 0, 0, 25)
-content.BackgroundTransparency = 1
-content.Parent = frame
-
-local jobLabel = Instance.new("TextLabel")
-jobLabel.Size = UDim2.new(1, -10, 0, 25)
-jobLabel.Position = UDim2.new(0, 5, 0, 5)
-jobLabel.BackgroundTransparency = 1
-jobLabel.TextColor3 = Color3.new(1, 1, 1)
-jobLabel.TextScaled = true
-jobLabel.Text = "Job ID: " .. game.JobId
-jobLabel.Parent = content
-
-local copyBtn = Instance.new("TextButton")
-copyBtn.Size = UDim2.new(1, -10, 0, 25)
-copyBtn.Position = UDim2.new(0, 5, 0, 35)
-copyBtn.Text = "Copy Job ID"
-copyBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-copyBtn.TextColor3 = Color3.new(1, 1, 1)
-copyBtn.Parent = content
-Instance.new("UICorner", copyBtn)
-
-copyBtn.MouseButton1Click:Connect(function()
-	pcall(function()
-		setclipboard(tostring(game.JobId))
 	end)
+	UIS.InputChanged:Connect(function(i)
+		if drag and i.UserInputType == Enum.UserInputType.MouseMovement then
+			local d = i.Position - ds
+			target.Position = UDim2.new(sp.X.Scale, sp.X.Offset+d.X, sp.Y.Scale, sp.Y.Offset+d.Y)
+		end
+	end)
+end
 
-	copyBtn.Text = "Copied!"
-	task.wait(1)
-	copyBtn.Text = "Copy Job ID"
+local mainGui = New("ScreenGui", {
+	Name = "JobIdGui", ResetOnSpawn = false,
+	ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+}, game.CoreGui)
+
+local iconBtn = New("TextButton", {
+	Size = UDim2.new(0, 36, 0, 36),
+	Position = UDim2.new(1, -50, 0, 14),
+	BackgroundColor3 = C.dark,
+	Text = "≡",
+	Font = Enum.Font.GothamBold,
+	TextSize = 16,
+	TextColor3 = C.silver,
+	AutoButtonColor = false,
+	ZIndex = 12,
+}, mainGui)
+Corner(10, iconBtn)
+Stroke(C.line, iconBtn)
+
+iconBtn.MouseEnter:Connect(function() Tween(iconBtn,{TextColor3=C.white},0.15) end)
+iconBtn.MouseLeave:Connect(function() Tween(iconBtn,{TextColor3=C.silver},0.15) end)
+
+local PANEL_W = 260
+local PANEL_H = 330
+
+local panel = New("Frame", {
+	Size = UDim2.new(0, PANEL_W, 0, PANEL_H),
+	Position = UDim2.new(1, -(PANEL_W+14), 0, 58),
+	BackgroundColor3 = C.dark,
+	ClipsDescendants = true,
+	ZIndex = 9,
+	Visible = false,
+}, mainGui)
+Corner(12, panel)
+Stroke(C.line, panel)
+MakeDraggable(panel, panel)
+
+New("Frame", {
+	Size = UDim2.new(0,28,0,2), Position = UDim2.new(0,14,0,0),
+	BackgroundColor3 = C.white, BorderSizePixel=0, ZIndex=11,
+}, panel)
+
+New("TextLabel", {
+	Size=UDim2.new(1,-14,0,28), Position=UDim2.new(0,14,0,6),
+	BackgroundTransparency=1, Text="Moon Tracker",
+	Font=Enum.Font.GothamBold, TextSize=9,
+	TextColor3=C.muted, TextXAlignment=Enum.TextXAlignment.Left, ZIndex=10,
+}, panel)
+
+Div(34, panel)
+
+local moonRows = {
+	{key="time",    lbl="Time"},
+	{key="moon",    lbl="Moon"},
+	{key="status",  lbl="Status"},
+	{key="players", lbl="Players"},
+}
+local moonVals = {}
+for i, row in ipairs(moonRows) do
+	local y = 38 + (i-1)*30
+	New("TextLabel", {
+		Size=UDim2.new(0,60,0,24), Position=UDim2.new(0,14,0,y),
+		BackgroundTransparency=1, Text=row.lbl,
+		Font=Enum.Font.GothamBold, TextSize=9,
+		TextColor3=C.muted, TextXAlignment=Enum.TextXAlignment.Left, ZIndex=10,
+	}, panel)
+	moonVals[row.key] = New("TextLabel", {
+		Size=UDim2.new(1,-80,0,24), Position=UDim2.new(0,76,0,y),
+		BackgroundTransparency=1, Text="—",
+		Font=Enum.Font.GothamBold, TextSize=11,
+		TextColor3=C.white, TextXAlignment=Enum.TextXAlignment.Right, ZIndex=10,
+	}, panel)
+	New("UIPadding",{PaddingRight=UDim.new(0,14)}, moonVals[row.key])
+end
+
+local MOON_END = 38 + #moonRows*30 + 6
+
+Div(MOON_END, panel)
+
+local SH = MOON_END + 4
+
+New("TextLabel", {
+	Size=UDim2.new(1,-14,0,26), Position=UDim2.new(0,14,0,SH),
+	BackgroundTransparency=1, Text="Server Hop",
+	Font=Enum.Font.GothamBold, TextSize=9,
+	TextColor3=C.muted, TextXAlignment=Enum.TextXAlignment.Left, ZIndex=10,
+}, panel)
+
+New("TextLabel", {
+	Size=UDim2.new(0,46,0,24), Position=UDim2.new(0,14,0,SH+26),
+	BackgroundTransparency=1, Text="Job Id",
+	Font=Enum.Font.GothamBold, TextSize=9,
+	TextColor3=C.muted, TextXAlignment=Enum.TextXAlignment.Left, ZIndex=10,
+}, panel)
+New("TextLabel", {
+	Size=UDim2.new(1,-140,0,24), Position=UDim2.new(0,62,0,SH+26),
+	BackgroundTransparency=1,
+	Text=string.sub(tostring(game.JobId),1,14).."…",
+	Font=Enum.Font.Gotham, TextSize=10,
+	TextColor3=C.silver, TextXAlignment=Enum.TextXAlignment.Left, ZIndex=10,
+}, panel)
+
+local copyBtn = New("TextButton", {
+	Size=UDim2.new(0,54,0,20), Position=UDim2.new(1,-66,0,SH+29),
+	BackgroundColor3=C.raised, Text="Copy",
+	Font=Enum.Font.GothamBold, TextSize=9,
+	TextColor3=C.white, AutoButtonColor=false, ZIndex=11,
+}, panel)
+Corner(6,copyBtn); Stroke(C.line,copyBtn)
+copyBtn.MouseButton1Click:Connect(function()
+	pcall(function() setclipboard(tostring(game.JobId)) end)
+	copyBtn.Text="✓"; task.wait(1.5); copyBtn.Text="Copy"
 end)
 
-local box = Instance.new("TextBox")
-box.Size = UDim2.new(1, -10, 0, 25)
-box.Position = UDim2.new(0, 5, 0, 65)
-box.PlaceholderText = "Enter Job ID"
-box.Text = G.Job
-box.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-box.TextColor3 = Color3.new(1, 1, 1)
-box.Parent = content
-Instance.new("UICorner", box)
+local inputBox = New("TextBox", {
+	Size=UDim2.new(1,-20,0,32), Position=UDim2.new(0,10,0,SH+56),
+	BackgroundColor3=C.raised,
+	PlaceholderText="  Job ID / Teleport String",
+	PlaceholderColor3=C.muted,
+	Text=G.Job,
+	Font=Enum.Font.Gotham, TextSize=11,
+	TextColor3=C.white, ClearTextOnFocus=false, ZIndex=10,
+}, panel)
+Corner(8,inputBox); Stroke(C.line,inputBox)
+New("UIPadding",{PaddingLeft=UDim.new(0,10)}, inputBox)
+inputBox.FocusLost:Connect(function() G.Job = inputBox.Text end)
 
-box.FocusLost:Connect(function()
-	G.Job = box.Text
+local spamCurrentColor = IsNoSpamUser() and C.raised or C.red
+
+local function MkBtn(lbl, xScale, xOff, bg)
+	local b = New("TextButton", {
+		Size=UDim2.new(0.47,0,0,28), Position=UDim2.new(xScale,xOff,0,SH+96),
+		BackgroundColor3=bg, Text=lbl,
+		Font=Enum.Font.GothamBold, TextSize=10,
+		TextColor3=C.white, AutoButtonColor=false, ZIndex=10,
+	}, panel)
+	Corner(8,b); Stroke(C.line,b)
+	return b
+end
+
+local joinBtn = MkBtn("Join", 0, 10, C.raised)
+local spamBtn = MkBtn(IsNoSpamUser() and "SPAM · LOCK" or "SPAM · OFF", 0.5, 5, spamCurrentColor)
+
+joinBtn.MouseEnter:Connect(function() Tween(joinBtn,{BackgroundColor3=C.raised:Lerp(C.white,0.1)},0.15) end)
+joinBtn.MouseLeave:Connect(function() Tween(joinBtn,{BackgroundColor3=C.raised},0.15) end)
+
+spamBtn.MouseEnter:Connect(function()
+	Tween(spamBtn,{BackgroundColor3=spamCurrentColor:Lerp(C.white,0.15)},0.15)
+end)
+spamBtn.MouseLeave:Connect(function()
+	Tween(spamBtn,{BackgroundColor3=spamCurrentColor},0.15)
 end)
 
-local joinBtn = Instance.new("TextButton")
-joinBtn.Size = UDim2.new(0.48, -5, 0, 25)
-joinBtn.Position = UDim2.new(0, 5, 0, 100)
-joinBtn.Text = "Join Server"
-joinBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-joinBtn.TextColor3 = Color3.new(1, 1, 1)
-joinBtn.Parent = content
-Instance.new("UICorner", joinBtn)
+local statusLbl = New("TextLabel", {
+	Size=UDim2.new(1,-20,0,18), Position=UDim2.new(0,14,0,SH+130),
+	BackgroundTransparency=1, Text="",
+	Font=Enum.Font.Gotham, TextSize=9,
+	TextColor3=C.muted, TextXAlignment=Enum.TextXAlignment.Left, ZIndex=10,
+}, panel)
+
+local function SetStatus(msg, col)
+	statusLbl.Text="▸  "..msg; statusLbl.TextColor3=col or C.muted
+	task.delay(3,function() if statusLbl.Text:find(msg,1,true) then statusLbl.Text="" end end)
+end
 
 joinBtn.MouseButton1Click:Connect(function()
-	G.Job = box.Text
-
-	if G.Job ~= "" then
-		local result = TPServer(G.Job)
-		print("[JOIN SERVER]", result)
-	end
+	G.Job=inputBox.Text
+	if G.Job~="" then SetStatus(TPServer(G.Job),C.silver)
+	else SetStatus("enter a job id first",C.muted) end
 end)
 
-local spamBtn = Instance.new("TextButton")
-spamBtn.Size = UDim2.new(0.48, -5, 0, 25)
-spamBtn.Position = UDim2.new(0.52, 0, 0, 100)
-spamBtn.Text = IsNoSpamUser() and "Spam : LOCK" or "Spam : OFF"
-spamBtn.BackgroundColor3 = IsNoSpamUser() and Color3.fromRGB(80, 80, 80) or Color3.fromRGB(90, 50, 50)
-spamBtn.TextColor3 = Color3.new(1, 1, 1)
-spamBtn.Parent = content
-Instance.new("UICorner", spamBtn)
-
 spamBtn.MouseButton1Click:Connect(function()
-	if IsNoSpamUser() then
-		G.SpamJoin = false
-		spamBtn.Text = "Spam : LOCK"
-		spamBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
-		return
-	end
-
-	G.Job = box.Text
-	G.SpamJoin = not G.SpamJoin
-
+	if IsNoSpamUser() then return end
+	G.Job=inputBox.Text; G.SpamJoin=not G.SpamJoin
 	if G.SpamJoin then
-		spamBtn.Text = "Spam : ON"
-		spamBtn.BackgroundColor3 = Color3.fromRGB(50, 120, 50)
+		spamBtn.Text="SPAM · ON"
+		spamCurrentColor = C.green
 	else
-		spamBtn.Text = "Spam : OFF"
-		spamBtn.BackgroundColor3 = Color3.fromRGB(90, 50, 50)
+		spamBtn.Text="SPAM · OFF"
+		spamCurrentColor = C.red
 	end
+	Tween(spamBtn,{BackgroundColor3=spamCurrentColor},0.2)
 end)
 
 task.spawn(function()
 	while task.wait(2) do
-		if not IsNoSpamUser() and G.SpamJoin then
-			G.Job = box.Text
-
-			if G.Job ~= "" then
-				pcall(function()
-					local result = TPServer(G.Job)
-					print("[SPAM JOIN]", result)
-				end)
-			end
+		if not IsNoSpamUser() and G.SpamJoin and G.Job~="" then
+			pcall(function() TPServer(G.Job) end)
 		end
 	end
 end)
 
-local minimized = false
+task.spawn(function()
+	while task.wait(1) do
+		local h, s = GetServerTime()
+		local moon   = CheckMoon()
+		local status = GetMoonStatus()
+		local dotCol = moon=="Full Moon" and C.white or moon=="Next Night" and C.silver or C.muted
 
-mini.MouseButton1Click:Connect(function()
-	minimized = not minimized
-
-	if minimized then
-		content.Visible = false
-		frame.Size = UDim2.new(0, 260, 0, 25)
-		mini.Text = "+"
-	else
-		content.Visible = true
-		frame.Size = UDim2.new(0, 260, 0, 150)
-		mini.Text = "-"
+		moonVals.time.Text    = h..":"..string.format("%02d",s)
+		moonVals.moon.Text    = moon
+		moonVals.status.Text  = status
+		moonVals.players.Text = tostring(#Players:GetPlayers())
+		moonVals.moon.TextColor3   = dotCol
+		moonVals.status.TextColor3 = dotCol
 	end
 end)
 
-local dragging = false
-local dragInput
-local dragStart
-local startPos
+local panelOpen = false
 
-local function update(input)
-	local delta = input.Position - dragStart
-
-	frame.Position = UDim2.new(
-		startPos.X.Scale,
-		startPos.X.Offset + delta.X,
-		startPos.Y.Scale,
-		startPos.Y.Offset + delta.Y
-	)
+local function OpenPanel()
+	panelOpen = true
+	panel.Visible = true
+	panel.Size = UDim2.new(0,PANEL_W,0,0)
+	Tween(panel,{Size=UDim2.new(0,PANEL_W,0,PANEL_H)},0.3)
 end
 
-title.InputBegan:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 then
-		dragging = true
-		dragStart = input.Position
-		startPos = frame.Position
+local function ClosePanel()
+	panelOpen = false
+	Tween(panel,{Size=UDim2.new(0,PANEL_W,0,0)},0.22)
+	task.delay(0.23,function() panel.Visible=false end)
+end
 
-		input.Changed:Connect(function()
-			if input.UserInputState == Enum.UserInputState.End then
-				dragging = false
-			end
-		end)
-	end
-end)
+local function Toggle()
+	if panelOpen then ClosePanel() else OpenPanel() end
+end
 
-title.InputChanged:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseMovement then
-		dragInput = input
-	end
-end)
+iconBtn.MouseButton1Click:Connect(Toggle)
 
-UIS.InputChanged:Connect(function(input)
-	if input == dragInput and dragging then
-		update(input)
-	end
+UIS.InputBegan:Connect(function(input, gpe)
+	if gpe then return end
+	if input.KeyCode == Enum.KeyCode.RightAlt then Toggle() end
 end)
