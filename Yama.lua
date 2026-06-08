@@ -442,9 +442,15 @@ RunService.Heartbeat:Connect(function()
 end)
 
 function EquipWeapon(toolTip)
+    Character = LocalPlayer.Character
+    if Character then
+        Humanoid = Character:FindFirstChildWhichIsA("Humanoid")
+    end
+
     if not Character then return end
     local tool = Character:FindFirstChildWhichIsA("Tool")
     if tool and tool.ToolTip == toolTip then return end
+    
     for _, x in next, LocalPlayer.Backpack:GetChildren() do
         if x:IsA("Tool") and x.ToolTip == toolTip then
             Humanoid:EquipTool(x)
