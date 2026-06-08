@@ -321,7 +321,7 @@ function Tween(targetCFrame, targetObject)
     pathPart.CFrame = startCFrame
     pathPart.Size = Vector3.new(5, 5, 5)
     pathPart.Parent = Workspace
-    local speed = 300
+    local speed = 325
     tween = TweenService:Create(pathPart, TweenInfo.new(distance / speed, Enum.EasingStyle.Linear), {CFrame = targetCFrame})
     connection = RunService.Heartbeat:Connect(function()
         if targetObject and targetObject.Parent and pathPart then
