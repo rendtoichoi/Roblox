@@ -4,9 +4,8 @@ local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Workspace = game:GetService("Workspace")
 local CommF_ = ReplicatedStorage.Remotes.CommF_
-local Enemies = Workspace.Enemies
+local Enemies = workspace.Enemies
 
 local config = {
     team = "Pirates"
@@ -320,8 +319,8 @@ function Tween(targetCFrame, targetObject)
     pathPart.CanCollide = false
     pathPart.CFrame = startCFrame
     pathPart.Size = Vector3.new(5, 5, 5)
-    pathPart.Parent = Workspace
-    local speed = 325
+    pathPart.Parent = workspace
+    local speed = 300
     tween = TweenService:Create(pathPart, TweenInfo.new(distance / speed, Enum.EasingStyle.Linear), {CFrame = targetCFrame})
     connection = RunService.Heartbeat:Connect(function()
         if targetObject and targetObject.Parent and pathPart then
@@ -749,41 +748,55 @@ function GetYama()
         if not Character or Humanoid.Health <= 0 then
             task.wait(1)
         else
-            if not Workspace.Map.Waterfall:FindFirstChild("SealedKatana") then
+            local map = workspace:FindFirstChild("Map")
+            if not map then
                 task.wait(1)
             else
-                local hitbox = Workspace.Map.Waterfall.SealedKatana.Hitbox
-                if not hitbox then
+                local waterfall = map:FindFirstChild("Waterfall")
+                if not waterfall then
                     task.wait(1)
                 else
-                    local dist = (hitbox.Position - HumanoidRootPart.Position).Magnitude
-                    if dist > 20 then
-                        Tween(hitbox.CFrame)
-                        task.wait(0.5)
+                    local sealedKatana = waterfall:FindFirstChild("SealedKatana")
+                    if not sealedKatana then
+                        task.wait(1)
                     else
-                        local ghosts = GetConnectionEnemies("Ghost")
-                        if ghosts and #ghosts > 0 then
-                            setStatus("killing ghosts")
-                            EnsureWeapon("Melee")
-                            for _, ghost in ipairs(ghosts) do
-                                if ghost and ghost:FindFirstChild("Humanoid") and ghost.Humanoid.Health > 0 then
-                                    local lastTween = 0
-                                    while ghost and ghost:FindFirstChild("Humanoid") and ghost.Humanoid.Health > 0 and ghost.Parent do
-                                        if HasYama() then break end
-                                        EnsureWeapon("Melee")
-                                        if not Character:FindFirstChild("HasBuso") then CommF_:InvokeServer("Buso") end
-                                        if tick() - lastTween > 0.5 and (ghost.HumanoidRootPart.Position - HumanoidRootPart.Position).Magnitude > 15 then
-                                            Tween(ghost.HumanoidRootPart.CFrame * CFrame.new(0, 15, 0))
-                                            lastTween = tick()
+                        local hitbox = sealedKatana:FindFirstChild("Hitbox")
+                        if not hitbox then
+                            task.wait(1)
+                        else
+                            local dist = (hitbox.Position - HumanoidRootPart.Position).Magnitude
+                            if dist > 20 then
+                                Tween(hitbox.CFrame)
+                                task.wait(0.5)
+                            else
+                                local ghosts = GetConnectionEnemies("Ghost")
+                                if ghosts and #ghosts > 0 then
+                                    setStatus("killing ghosts")
+                                    EnsureWeapon("Melee")
+                                    for _, ghost in ipairs(ghosts) do
+                                        if ghost and ghost:FindFirstChild("Humanoid") and ghost.Humanoid.Health > 0 then
+                                            local lastTween = 0
+                                            while ghost and ghost:FindFirstChild("Humanoid") and ghost.Humanoid.Health > 0 and ghost.Parent do
+                                                if HasYama() then break end
+                                                EnsureWeapon("Melee")
+                                                if not Character:FindFirstChild("HasBuso") then CommF_:InvokeServer("Buso") end
+                                                if tick() - lastTween > 0.5 and (ghost.HumanoidRootPart.Position - HumanoidRootPart.Position).Magnitude > 15 then
+                                                    Tween(ghost.HumanoidRootPart.CFrame * CFrame.new(0, 15, 0))
+                                                    lastTween = tick()
+                                                end
+                                                FastAttack("Ghost")
+                                                task.wait(0.2)
+                                            end
                                         end
-                                        FastAttack("Ghost")
-                                        task.wait(0.2)
                                     end
+                                else
+                                    local clickDetector = sealedKatana.Hitbox:FindFirstChild("ClickDetector")
+                                    if clickDetector then
+                                        fireclickdetector(clickDetector)
+                                    end
+                                    task.wait(0.5)
                                 end
                             end
-                        else
-                            fireclickdetector(Workspace.Map.Waterfall.SealedKatana.Hitbox.ClickDetector)
-                            task.wait(0.5)
                         end
                     end
                 end
@@ -803,7 +816,7 @@ local function Main()
             setStatus("All tasks complete. Idle...")
             task.wait(5)
         elseif not HasYama() then
-            local progress = CommF_:InvokeServer("EliteHunter", "Progress")
+            local progress = GetEliteProgress()
             if progress < 30 then
                 FarmEliteHunter()
             elseif progress >= 30 then
