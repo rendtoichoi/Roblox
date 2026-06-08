@@ -321,7 +321,7 @@ function Tween(targetCFrame, targetObject)
     pathPart.CFrame = startCFrame
     pathPart.Size = Vector3.new(5, 5, 5)
     pathPart.Parent = Workspace
-    local speed = 350
+    local speed = 300
     tween = TweenService:Create(pathPart, TweenInfo.new(distance / speed, Enum.EasingStyle.Linear), {CFrame = targetCFrame})
     connection = RunService.Heartbeat:Connect(function()
         if targetObject and targetObject.Parent and pathPart then
@@ -453,6 +453,14 @@ function EquipWeapon(toolTip)
     end
 end
 
+function EnsureWeapon(toolTip)
+    if not Character then return end
+    local tool = Character:FindFirstChildWhichIsA("Tool")
+    if not tool or (tool.ToolTip ~= toolTip) then
+        EquipWeapon(toolTip)
+    end
+end
+
 function UpdateInventory()
     if tick() - lastCheckInv > 1 then
         inventoryScan = CommF_:InvokeServer("getInventory")
@@ -482,7 +490,7 @@ end
 
 getgenv().DontHopSameServer = getgenv().DontHopSameServer ~= false
 getgenv().CacheSeconds = getgenv().CacheSeconds or 60
-getgenv().HopMaxPlayers = getgenv().HopMaxPlayers or 12
+getgenv().HopMaxPlayers = getgenv().HopMaxPlayers or 5
 
 local LastServersDataPulled = nil
 local CachedServers = nil
@@ -515,7 +523,7 @@ local function GetAllServers()
             return ServerBrowser:InvokeServer(page)
         end)
         if ok and type(data) == "table" and IfTableHaveIndex(data) then
-            totalPages += 1
+            totalPages = totalPages + 1
             for jobId, info in pairs(data) do
                 AllServers[jobId] = info
             end
@@ -632,24 +640,24 @@ function FarmBoneMastery()
         for _, v in next, Enemies:GetChildren() do
             if table.find(BoneMonsters, v.Name) then
                 local h = v:FindFirstChild("Humanoid")
-                local hrp = v:FindFirstChild("HumanoidRootPart")
-                if h and hrp and h.Health > 0 then
+                if h and h.Health > 0 then
                     target = v
                     break
                 end
             end
         end
         if target then
-            EquipWeapon("Sword")
+            EnsureWeapon("Sword")
             BringMonster(target.Name, 5)
             local lastTween = 0
             while target and target:FindFirstChild("HumanoidRootPart") and target.Humanoid.Health > 0 and target.Parent do
                 if GetMastery() >= 350 then break end
+                EnsureWeapon("Sword")
+                if not Character:FindFirstChild("HasBuso") then CommF_:InvokeServer("Buso") end
                 if tick() - lastTween > 0.5 and (target.HumanoidRootPart.Position - HumanoidRootPart.Position).Magnitude > 15 then
                     Tween(target.HumanoidRootPart.CFrame * CFrame.new(0, 15, 0))
                     lastTween = tick()
                 end
-                if not Character:FindFirstChild("HasBuso") then CommF_:InvokeServer("Buso") end
                 FastAttack(target.Name)
                 task.wait(0.2)
             end
@@ -672,7 +680,7 @@ local function GetEliteProgress()
 end
 
 function FarmEliteHunter()
-    setStatus("Farming Elite")
+    setStatus("Farming Elite Hunter progress...")
     while GetEliteProgress() < 30 and not HasYama() do
         if not Character or Humanoid.Health <= 0 then
             task.wait(1)
@@ -692,11 +700,11 @@ function FarmEliteHunter()
                     if bossName then
                         local boss = Enemies:FindFirstChild(bossName)
                         if boss and boss:FindFirstChild("Humanoid") and boss.Humanoid.Health > 0 then
-                            EquipWeapon("Melee")
+                            EnsureWeapon("Melee")
                             local lastTween = 0
                             while boss and boss:FindFirstChild("Humanoid") and boss.Humanoid.Health > 0 and boss.Parent do
                                 if GetEliteProgress() >= 30 or HasYama() then break end
-                                if not Character:FindFirstChildWhichIsA("Tool") then EquipWeapon("Melee") end
+                                EnsureWeapon("Melee")
                                 if not Character:FindFirstChild("HasBuso") then CommF_:InvokeServer("Buso") end
                                 if tick() - lastTween > 0.3 and (boss.HumanoidRootPart.Position - HumanoidRootPart.Position).Magnitude > 15 then
                                     Tween(boss.HumanoidRootPart.CFrame * CFrame.new(0, 15, 0))
@@ -731,7 +739,7 @@ function FarmEliteHunter()
         end
         task.wait(0.5)
     end
-    setStatus("Elite Hunter reached 30.")
+    setStatus("Elite reached 30")
 end
 
 function GetYama()
@@ -745,40 +753,45 @@ function GetYama()
                 task.wait(1)
             else
                 local hitbox = Workspace.Map.Waterfall.SealedKatana.Hitbox
-                local dist = (hitbox.Position - HumanoidRootPart.Position).Magnitude
-                if dist > 20 then
-                    Tween(hitbox.CFrame)
-                    task.wait(0.5)
+                if not hitbox then
+                    task.wait(1)
                 else
-                    local ghosts = GetConnectionEnemies("Ghost")
-                    if ghosts and #ghosts > 0 then
-                        setStatus("kill ghosts ( Yama )")
-                        EquipWeapon("Melee")
-                        for _, ghost in ipairs(ghosts) do
-                            if ghost and ghost:FindFirstChild("Humanoid") and ghost.Humanoid.Health > 0 then
-                                local lastTween = 0
-                                while ghost and ghost:FindFirstChild("Humanoid") and ghost.Humanoid.Health > 0 and ghost.Parent do
-                                    if HasYama() then break end
-                                    if tick() - lastTween > 0.5 and (ghost.HumanoidRootPart.Position - HumanoidRootPart.Position).Magnitude > 15 then
-                                        Tween(ghost.HumanoidRootPart.CFrame * CFrame.new(0, 15, 0))
-                                        lastTween = tick()
+                    local dist = (hitbox.Position - HumanoidRootPart.Position).Magnitude
+                    if dist > 20 then
+                        Tween(hitbox.CFrame)
+                        task.wait(0.5)
+                    else
+                        local ghosts = GetConnectionEnemies("Ghost")
+                        if ghosts and #ghosts > 0 then
+                            setStatus("killing ghosts")
+                            EnsureWeapon("Melee")
+                            for _, ghost in ipairs(ghosts) do
+                                if ghost and ghost:FindFirstChild("Humanoid") and ghost.Humanoid.Health > 0 then
+                                    local lastTween = 0
+                                    while ghost and ghost:FindFirstChild("Humanoid") and ghost.Humanoid.Health > 0 and ghost.Parent do
+                                        if HasYama() then break end
+                                        EnsureWeapon("Melee")
+                                        if not Character:FindFirstChild("HasBuso") then CommF_:InvokeServer("Buso") end
+                                        if tick() - lastTween > 0.5 and (ghost.HumanoidRootPart.Position - HumanoidRootPart.Position).Magnitude > 15 then
+                                            Tween(ghost.HumanoidRootPart.CFrame * CFrame.new(0, 15, 0))
+                                            lastTween = tick()
+                                        end
+                                        FastAttack("Ghost")
+                                        task.wait(0.2)
                                     end
-                                    if not Character:FindFirstChild("HasBuso") then CommF_:InvokeServer("Buso") end
-                                    FastAttack("Ghost")
-                                    task.wait(0.2)
                                 end
                             end
+                        else
+                            fireclickdetector(Workspace.Map.Waterfall.SealedKatana.Hitbox.ClickDetector)
+                            task.wait(0.5)
                         end
-                    else
-                        fireclickdetector(Workspace.Map.Waterfall.SealedKatana.Hitbox.ClickDetector)
-                        task.wait(0.5)
                     end
                 end
             end
         end
         task.wait()
     end
-    setStatus("got Yama")
+    setStatus("got yama")
 end
 
 local function Main()
@@ -800,7 +813,7 @@ local function Main()
             if GetMastery() < 350 then
                 LoadYama()
                 task.wait(0.5)
-                EquipWeapon("Sword")
+                EnsureWeapon("Sword")
                 FarmBoneMastery()
             end
         end
