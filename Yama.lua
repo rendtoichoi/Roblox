@@ -320,7 +320,7 @@ function Tween(targetCFrame, targetObject)
     pathPart.CFrame = startCFrame
     pathPart.Size = Vector3.new(5, 5, 5)
     pathPart.Parent = workspace
-    local speed = 325
+    local speed = 300
     tween = TweenService:Create(pathPart, TweenInfo.new(distance / speed, Enum.EasingStyle.Linear), {CFrame = targetCFrame})
     connection = RunService.Heartbeat:Connect(function()
         if targetObject and targetObject.Parent and pathPart then
@@ -749,55 +749,44 @@ function GetYama()
             task.wait(1)
         else
             local map = workspace:FindFirstChild("Map")
-            if not map then
-                task.wait(1)
+            local waterfall = map and map:FindFirstChild("Waterfall")
+            local sealedKatana = waterfall and waterfall:FindFirstChild("SealedKatana")
+            local hitbox = sealedKatana and sealedKatana:FindFirstChild("Hitbox")
+            if not map or not waterfall or not sealedKatana or not hitbox then
+                Tween(CFrame.new(5251.93213, 17.9657593, 453.653931, 0.0348494053, 0, 0.999392569, 0, 1, 0, -0.999392569, 0, 0.0348494053))
+                task.wait(0.5)
             else
-                local waterfall = map:FindFirstChild("Waterfall")
-                if not waterfall then
-                    task.wait(1)
+                local dist = (hitbox.Position - HumanoidRootPart.Position).Magnitude
+                if dist > 20 then
+                    Tween(hitbox.CFrame)
+                    task.wait(0.5)
                 else
-                    local sealedKatana = waterfall:FindFirstChild("SealedKatana")
-                    if not sealedKatana then
-                        task.wait(1)
-                    else
-                        local hitbox = sealedKatana:FindFirstChild("Hitbox")
-                        if not hitbox then
-                            task.wait(1)
-                        else
-                            local dist = (hitbox.Position - HumanoidRootPart.Position).Magnitude
-                            if dist > 20 then
-                                Tween(hitbox.CFrame)
-                                task.wait(0.5)
-                            else
-                                local ghosts = GetConnectionEnemies("Ghost")
-                                if ghosts and #ghosts > 0 then
-                                    setStatus("killing ghosts")
+                    local ghosts = GetConnectionEnemies("Ghost")
+                    if ghosts and #ghosts > 0 then
+                        setStatus("killing ghosts")
+                        EnsureWeapon("Melee")
+                        for _, ghost in ipairs(ghosts) do
+                            if ghost and ghost:FindFirstChild("Humanoid") and ghost.Humanoid.Health > 0 then
+                                local lastTween = 0
+                                while ghost and ghost:FindFirstChild("Humanoid") and ghost.Humanoid.Health > 0 and ghost.Parent do
+                                    if HasYama() then break end
                                     EnsureWeapon("Melee")
-                                    for _, ghost in ipairs(ghosts) do
-                                        if ghost and ghost:FindFirstChild("Humanoid") and ghost.Humanoid.Health > 0 then
-                                            local lastTween = 0
-                                            while ghost and ghost:FindFirstChild("Humanoid") and ghost.Humanoid.Health > 0 and ghost.Parent do
-                                                if HasYama() then break end
-                                                EnsureWeapon("Melee")
-                                                if not Character:FindFirstChild("HasBuso") then CommF_:InvokeServer("Buso") end
-                                                if tick() - lastTween > 0.5 and (ghost.HumanoidRootPart.Position - HumanoidRootPart.Position).Magnitude > 15 then
-                                                    Tween(ghost.HumanoidRootPart.CFrame * CFrame.new(0, 15, 0))
-                                                    lastTween = tick()
-                                                end
-                                                FastAttack("Ghost")
-                                                task.wait(0.2)
-                                            end
-                                        end
+                                    if not Character:FindFirstChild("HasBuso") then CommF_:InvokeServer("Buso") end
+                                    if tick() - lastTween > 0.5 and (ghost.HumanoidRootPart.Position - HumanoidRootPart.Position).Magnitude > 15 then
+                                        Tween(ghost.HumanoidRootPart.CFrame * CFrame.new(0, 15, 0))
+                                        lastTween = tick()
                                     end
-                                else
-                                    local clickDetector = sealedKatana.Hitbox:FindFirstChild("ClickDetector")
-                                    if clickDetector then
-                                        fireclickdetector(clickDetector)
-                                    end
-                                    task.wait(0.5)
+                                    FastAttack("Ghost")
+                                    task.wait(0.2)
                                 end
                             end
                         end
+                    else
+                        local clickDetector = hitbox:FindFirstChild("ClickDetector")
+                        if clickDetector then
+                            fireclickdetector(clickDetector)
+                        end
+                        task.wait(0.5)
                     end
                 end
             end
