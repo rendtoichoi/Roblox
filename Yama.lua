@@ -445,8 +445,11 @@ function EquipWeapon(toolTip)
     Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
 
     if not Character then return end
+
     local tool = Character:FindFirstChildWhichIsA("Tool")
-    if tool and tool.ToolTip == toolTip then return end
+    if tool and tool.Parent == Character and tool.ToolTip == toolTip then 
+        return 
+    end
     
     for _, x in next, LocalPlayer.Backpack:GetChildren() do
         if x:IsA("Tool") and x.ToolTip == toolTip then
