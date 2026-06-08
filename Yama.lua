@@ -442,10 +442,7 @@ RunService.Heartbeat:Connect(function()
 end)
 
 function EquipWeapon(toolTip)
-    Character = LocalPlayer.Character
-    if Character then
-        Humanoid = Character:FindFirstChildWhichIsA("Humanoid")
-    end
+    Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
 
     if not Character then return end
     local tool = Character:FindFirstChildWhichIsA("Tool")
