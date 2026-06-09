@@ -14,7 +14,6 @@ local SWORD_CONFIG = {
     CheckDelay = 5
 }
 
-
 local function CheckSwordMastery()
     local inventory = CommF:InvokeServer("getInventory")
 
@@ -31,9 +30,8 @@ local function CheckSwordMastery()
             print("Sword:", name, "| Mastery:", mastery)
 
             if name == SWORD_CONFIG.SwordName and mastery >= SWORD_CONFIG.RequiredMastery then
-                writefile(plr.Name .. ".txt", "Completed-" .. name .. "-M" .. mastery)
-
-                print("Đã writefile:", plr.Name .. ".txt")
+                getgenv().CustomChange = true
+                print("Đã đạt yêu cầu:", name, "Mastery", mastery)
                 return true
             end
         end
