@@ -10,7 +10,7 @@ local CommF = ReplicatedStorage.Remotes.CommF_
 
 local SWORD_CONFIG = {
     SwordName = "Tushita",
-    RequiredMastery = 350,
+    RequiredMastery = 0,
     CheckDelay = 5
 }
 
