@@ -68,6 +68,18 @@ function Neuraxis:CreateNeuraxis(neuraxisName)
     mainCorner.Name = "mainCorner"
     mainCorner.Parent = MainWhiteFrame
 
+    local uiScale = Instance.new("UIScale")
+    uiScale.Parent = MainWhiteFrame
+
+    local baseViewportSize = Camera.ViewportSize
+    local function updateUIScale()
+        local current = Camera.ViewportSize
+        local scale = math.min(current.X / baseViewportSize.X, current.Y / baseViewportSize.Y)
+        uiScale.Scale = scale
+    end
+    Camera:GetPropertyChangedSignal("ViewportSize"):Connect(updateUIScale)
+    updateUIScale()
+
     MainWhiteFrame_2.Name = "MainWhiteFrame"
     MainWhiteFrame_2.Parent = MainWhiteFrame
     MainWhiteFrame_2.BackgroundColor3 = Color3.fromRGB(14, 14, 14)
