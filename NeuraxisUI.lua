@@ -38,7 +38,7 @@ function Neuraxis:CreateNeuraxis(neuraxisName)
         end
     end)
     UserInputService.InputChanged:Connect(function(input)
-        if Draggable == true then
+        if Draggable == true and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
             local NewPosition = FramePosition +
                                     ((Vector2.new(input.Position.X, input.Position.Y) - DragMousePosition) /
                                         Camera.ViewportSize)
@@ -60,7 +60,8 @@ function Neuraxis:CreateNeuraxis(neuraxisName)
     MainWhiteFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     MainWhiteFrame.BorderSizePixel = 0
     MainWhiteFrame.ClipsDescendants = true
-    MainWhiteFrame.Position = UDim2.new(0.236969739, 0, 0.360436916, 0)
+    MainWhiteFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+    MainWhiteFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
     MainWhiteFrame.Size = UDim2.new(0, 528, 0, 310)
 
     mainCorner.CornerRadius = UDim.new(0, 8)
